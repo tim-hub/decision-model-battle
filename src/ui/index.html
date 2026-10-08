@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tank Battle Viewer</title>
+  <style>
+    :root {
+      --bg: #12141a;
+      --panel: #1b1e27;
+      --line: #2a2e3a;
+      --text: #e6e8ee;
+      --muted: #8a90a2;
+      --team-a: #f2b134;
+      --team-b: #4cc3e8;
+      --brick: #a8532f;
+      --steel: #8d96a6;
+      --water: #2c5fa8;
+      --trees: #2f7a3e;
+      --empty: #0b0c10;
+      --danger: #e5484d;
+      --cell: min(5.4vw, 44px);
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.4 ui-sans-serif, system-ui, sans-serif; }
+    header { display: flex; flex-wrap: wrap; gap: 12px; align-items: baseline; padding: 14px 20px; border-bottom: 1px solid var(--line); }
+    header h1 { font-size: 16px; margin: 0; }
+    .team-a { color: var(--team-a); }
+    .team-b { color: var(--team-b); }
+    #meta { color: var(--muted); }
+    #live { font-weight: 600; }
+    main { display: flex; flex-wrap: wrap; gap: 20px; padding: 20px; align-items: flex-start; }
+    #board { display: grid; grid-template-columns: repeat(13, var(--cell)); grid-template-rows: repeat(13, var(--cell)); gap: 1px; background: var(--line); border: 1px solid var(--line); }
+    .cell { position: relative; background: var(--empty); display: grid; place-items: center; }
+    .cell.brick { background: repeating-linear-gradient(0deg, var(--brick) 0 45%, #6e3420 45% 50%); }
+    .cell.steel { background: linear-gradient(135deg, var(--steel), #5d6472); }
+    .cell.water { background: var(--water); }
+    .cell.trees { background: radial-gradient(circle at 30% 30%, #3f9a52, var(--trees)); }
+    .tank { width: 82%; height: 82%; border-radius: 6px; display: grid; place-items: center; font-weight: 700; color: #111; position: relative; }
+    .tank.a { background: var(--team-a); }
+    .tank.b { background: var(--team-b); }
+    .tank .arrow { position: absolute; font-size: 10px; color: #111; }
+    .tank .hp { position: absolute; bottom: -2px; left: 4%; right: 4%; height: 4px; background: #0008; border-radius: 2px; overflow: hidden; }
+    .tank .hp i { display: block; height: 100%; background: #3ddc84; }
+    .bullet { width: 26%; height: 26%; border-radius: 50%; background: #fff; box-shadow: 0 0 6px #fff; }
+    #side { flex: 1; min-width: 320px; display: grid; gap: 14px; }
+    .team { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px; }
+    .team h2 { margin: 0 0 8px; font-size: 14px; }
+    .tankcard { border-top: 1px solid var(--line); padding: 8px 0; }
+    .tankcard.dead { opacity: 0.4; }
+    .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .chip { padding: 1px 8px; border-radius: 10px; background: #2a2e3a; font-family: ui-monospace, monospace; font-size: 12px; }
+    .chip.backup { background: var(--danger); color: #fff; }
+    .muted { color: var(--muted); font-size: 12px; }
+    .odds { display: grid; grid-template-columns: 96px 1fr 44px; gap: 2px 8px; margin-top: 4px; font-family: ui-monospace, monospace; font-size: 11px; }
+    .odds .bar { background: #2a2e3a; border-radius: 3px; overflow: hidden; height: 10px; align-self: center; }
+    .odds .bar i { display: block; height: 100%; background: var(--muted); }
+    .odds .picked { color: var(--text); font-weight: 700; }
+    .odds .picked + .bar i { background: #3ddc84; }
+    footer { position: sticky; bottom: 0; display: flex; gap: 10px; align-items: center; padding: 12px 20px; background: var(--panel); border-top: 1px solid var(--line); }
+    footer button, footer select { background: #2a2e3a; color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; cursor: pointer; }
+    #scrub { flex: 1; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Tank Battle</h1>
+    <span><b class="team-a" id="name-a"></b> vs <b class="team-b" id="name-b"></b></span>
+    <span id="meta"></span>
+    <span id="live"></span>
+  </header>
+  <main>
+    <div id="board"></div>
+    <div id="side">
+      <section class="team" id="panel-a"></section>
+      <section class="team" id="panel-b"></section>
+    </div>
+  </main>
+  <footer>
+    <button id="first" title="First turn">⏮</button>
+    <button id="prev" title="Previous turn (←)">◀</button>
+    <button id="play" title="Play / pause (space)">▶</button>
+    <button id="next" title="Next turn (→)">▶▶</button>
+    <button id="last" title="Latest turn">⏭</button>
+    <input id="scrub" type="range" min="0" max="0" value="0" />
+    <select id="speed">
+      <option value="800">0.5×</option>
+      <option value="400" selected>1×</option>
+      <option value="150">3×</option>
+      <option value="50">8×</option>
+    </select>
+  </footer>
+  <script type="module" src="./viewer.ts"></script>
+</body>
+</html>

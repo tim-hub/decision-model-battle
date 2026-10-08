@@ -16,7 +16,9 @@ status with teammates through a fixed list of status options.
 - Full map visible to everyone
 - Talk phase: each tank picks 1 status. All tanks talk at the same time, then all tanks act after
   seeing their team's statuses. Only teammates see them
-- Stack: TypeScript, Node CLI, Vitest
+- Stack: TypeScript on Bun (runtime, package manager, `bun test`)
+- Entrants: the local Ollama decision models `laya`, `tev1` and `nimble`, plus the baseline. One model drives all 3 tanks of its team
+- Every game can be watched live in a browser viewer, or run headless; either way the full replay is recorded
 
 ## Assumptions (confirm or change)
 - Map is Battle City stage 1, mirrored top/bottom so both sides get the same layout
@@ -119,8 +121,10 @@ Also the backup rule.
 
 ## Replay (JSONL)
 - Line 1: `{ "type": "header", "version": 1, "seed", "tiles", "players": { "a", "b" }, "initial_hash" }`
-- 1 line per turn: `{ "type": "turn", "turn", "statuses", "actions", "backup", "latency_ms", "hash" }`
+- 1 line per turn: `{ "type": "turn", "turn", "statuses", "actions", "odds", "backup", "latency_ms", "hash" }`
   - `actions` maps tank id to the chosen option per tick, `backup` maps tank id to the phases that used backup
+  - `odds` maps tank id to `{ talk: [odds], act: [odds per tick] }`, the full odds the model returned
+    (for a backup decision: `{ "<baseline pick>": 1 }`)
 - Last line: `{ "type": "result", "winner", "turns", "final_hash" }`
 - `hash` is sha256 of the state JSON after the turn. Re-simulating `actions` from `seed` + `tiles`
   must reproduce every hash
@@ -152,12 +156,24 @@ Per team per match, merged per player in a tournament:
 
 Distances are Manhattan, measured from the start of the turn.
 
+## Ollama players
+- `ollama:<model>` calls `POST http://localhost:11434/v1/systemone` with one `choice` question per decision,
+  two for the light tank's act call (one per tick). Criteria are the legal options; `probabilities` become the odds
+- The model's `state` holds the whole game in compact form: ASCII board with terrain, tanks and bullets,
+  one line per tank (`id class x y hp dir`), one line per bullet, the turn, and the team statuses in the act phase
+- Compact because `laya` caps state + question at about 350 tokens
+
+## Viewer
+- `match --ui` serves a page on `--port` (default 3737) that polls `/api/view` and shows the game live
+- `replay <file> --ui` serves a recorded game
+- Each frame pairs a board with the decisions made on it: per tank its status, actions, top odds per tick,
+  backup flags and latency. Play/pause, step, scrub, speed
+
 ## CLI
-- `match --a <player> --b <player> [--seed N] [--out file] [--render]`
-- `tournament <player> <player> [...] [--games N]` (N games per side)
-- `replay <file> [--render]`: re-simulates and checks every hash
-- A player is `baseline`, `random`, an `http(s)://` endpoint, or a path to a module that exports `decide(request)`
+- `match --a <player> --b <player> [--seed N] [--out file] [--ui] [--port N] [--deadline ms] [--render]`
+- `tournament <player> <player> [...] [--games N] [--out-dir dir] [--deadline ms]` (N games per side)
+- `replay <file> [--ui] [--render]`: re-simulates and checks every hash
+- A player is `baseline`, `random`, `ollama:<model>`, an `http(s)://` endpoint, or a path to a module that exports `decide(request)`
 
 ## Out of scope (separate specs)
-- Browser replay viewer reusing `src/engine`
 - Leaderboard site + CI verification of submitted runs
